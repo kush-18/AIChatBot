@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api")
 public class ChatController {
 
-    private final chatService summarizeService;
+    private final ChatService summarizeService;
     @Autowired
-    public ChatController(chatService summarizeService) {
+    public ChatController(ChatService summarizeService) {
         this.summarizeService = summarizeService;
     }
 
