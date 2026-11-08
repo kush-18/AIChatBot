@@ -2,6 +2,8 @@ package org.example.aichatbot;
 
 
 import org.example.aichatbot.aitools.CalculatorTool;
+import org.example.aichatbot.aitools.CurrencyExchangeTool;
+import org.example.aichatbot.aitools.WeatherTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -14,27 +16,41 @@ import java.util.List;
 @Service
 public class ChatService {
     private final ChatClient chatClient;
-    private final CalculatorTool calculatorTool;
-    private final List<Message> history =  new ArrayList<>();
+    private CalculatorTool calculatorTool;
+    private WeatherTool weatherTool;
+    private CurrencyExchangeTool currencyExchangeTool;
 
-    private static final String SYSTEM_PROMPT = """
-            You are a helpful AI assistant with access to the external tools 
-            Follow these rules:
-            1. For arithmetic operations always use calculator tool
-            2. After receiving the result explain it naturally.
-            """;
+    private final List<Message> history = new ArrayList<>();
 
-    public ChatService(ChatClient.Builder builder,CalculatorTool calculatorTool) {
+    public ChatService(ChatClient.Builder builder,
+                       CalculatorTool calculatorTool,
+                       WeatherTool weatherTool,
+                       CurrencyExchangeTool currencyExchangeTool) {
         this.chatClient = builder.build();
         this.calculatorTool = calculatorTool;
+        this.weatherTool = weatherTool;
+        this.currencyExchangeTool = currencyExchangeTool;
     }
+
+    private static final String SYSTEM_PROMPT = """
+            You are a helpful AI assistant with access to external tools.
+
+            Follow these rules:
+            1. For arithmetic calculations, ALWAYS use the calculator tool.
+            2. Always use calculator tool for even trivial calculation
+            3. For current weather, ALWAYS use the currentWeather tool.
+            4. For currency conversion or exchange rates, ALWAYS use the convertCurrency tool.
+            5. You may call multiple tools when solving a multi-step request.
+            6. After receiving tool results, explain the answer naturally.
+            7. Never invent current weather or exchange-rate information.
+            """;
 
     public String chat(String message) {
         history.add(new UserMessage(message));
         String response = chatClient.prompt()
                 .system(SYSTEM_PROMPT)
                 .messages(history)
-                .tools(calculatorTool)
+                .tools(calculatorTool, weatherTool, currencyExchangeTool)
                 .call().content();
 
         history.add(new AssistantMessage(response));
